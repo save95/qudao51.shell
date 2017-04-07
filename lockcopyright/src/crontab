@@ -1,0 +1,6 @@
+
+# everyday
+00 00 * * *    /usr/bin/run-parts   /www/sh/everyday
+
+# lock copyright file
+00 00 * * *   /bin/sh /www/sh/lock.sh

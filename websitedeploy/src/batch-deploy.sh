@@ -19,15 +19,6 @@ readonly FAILD_LOG_FILE='faild.log'
 readonly DATE=`date '+%F %T'`
 readonly BACKUP_EXT=`date '+%F_%T'`
 
-# check lock
-if [ -f ${LOCK_FILE} ]; then
-    printf "\E[31m[Error]\E[0m The program is being used.\n"
-    exit;
-fi
-
-touch ${LOCK_FILE}
-
-
 function quitRun() {
     rm -f ${VALID_TMP_FILE}
     rm -f ${LOCK_FILE}
@@ -150,6 +141,14 @@ function statistics() {
     printf "\E[1m%-12s%-12s%-12s%-12s\E[0m\n" TOTAL VALID SUCCESS FAILD
     printf "%-12s%-12s%-12s%-12s%-12s\n" ${LINE_NUM} ${VALID_NUM} ${SUCCESS_NUM} ${FAILD_NUM}
 }
+
+# check lock
+if [ -f ${LOCK_FILE} ]; then
+    printf "\E[31m[Error]\E[0m The program is being used.\n"
+    exit;
+fi
+
+touch ${LOCK_FILE}
 
 #
 if [ ! -f ${MS_FILE} ]; then

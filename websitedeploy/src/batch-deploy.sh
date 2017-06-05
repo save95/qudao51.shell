@@ -5,24 +5,28 @@ readonly WEB_CONF_DIR=`sed '/^web_nginx_conf_dir\s*=.*$/!d;s/.*=\s*//;s/\s//g' c
 readonly WEB_ROOT_DIR=`sed '/^web_root_dir\s*=.*$/!d;s/.*=\s*//;s/\s//g' config.ini`
 readonly WEB_USER=`sed '/^web_user\s*=.*$/!d;s/.*=\s*//;s/\s//g' config.ini`
 readonly WEB_USER_GROUP=`sed '/^web_user_group\s*=.*$/!d;s/.*=\s*//;s/\s//g' config.ini`
+readonly LOG_DIR="logs"
 
 # todo check params
 
 # const
-readonly MS_FILE='web.conf.ms'
+readonly BASE_NGINX_CONF_FILE='conf/web.conf'
 readonly SERVER_NAME_PATTERN="^([a-z0-9]+)((.[-a-z0-9]+)+)$"
 
-readonly LOCK_FILE='.lock'
-readonly VALID_TMP_FILE='valid.tmp'
-readonly SUCCESS_LOG_FILE='success.log'
-readonly FAILD_LOG_FILE='faild.log'
+readonly USE_LOG_DIR="${LOG_DIR}/.runtime/.batch-deploy"
+readonly LOCK_FILE="${USE_LOG_DIR}/.lock"
+readonly VALID_TMP_FILE="${USE_LOG_DIR}/valid.tmp"
+readonly SUCCESS_LOG_FILE="${USE_LOG_DIR}/success.log"
+readonly FAILD_LOG_FILE="${USE_LOG_DIR}/faild.log"
 readonly DATE=`date '+%F %T'`
 readonly BACKUP_EXT=`date '+%F_%T'`
 
 function quitRun() {
+    # clean tmp & lock file
     rm -f ${VALID_TMP_FILE}
     rm -f ${LOCK_FILE}
-    
+
+    # move log file
     if [ -f ${SUCCESS_LOG_FILE} ]; then
         mv -f ${SUCCESS_LOG_FILE} "${SUCCESS_LOG_FILE}.${BACKUP_EXT}"
     fi
@@ -54,7 +58,7 @@ function check() {
         printf "\E[32m%-12s\E[0m" "[success]"
     else
         printf "\E[31m%-12s\E[0m" "[existed]"
-        vaild=0
+        #vaild=0
     fi
 
 
@@ -103,7 +107,7 @@ function setWeb() {
     if [ "${ENTER_NEXT}" == 1 ]; then
         local CONF_FILE="${WEB_CONF_DIR}/${serverName}.conf"
         if [ ! -f "${CONF_FILE}" ]; then
-            sed "s|SERVER_NAME|${serverName}|g; s|ROOT_DIR|${rootDir}|g" ${MS_FILE} > ${serverName}.conf.tmp
+            sed "s|SERVER_NAME|${serverName}|g; s|ROOT_DIR|${rootDir}|g" ${BASE_NGINX_CONF_FILE} > ${serverName}.conf.tmp
             mv ${serverName}.conf.tmp ${CONF_FILE} > /dev/null 2>&1
             if [ "$?" == 1 ]; then
                 printf "\E[31m%-12s\E[0m\n" "[faild]"
@@ -142,6 +146,11 @@ function statistics() {
     printf "%-12s%-12s%-12s%-12s%-12s\n" ${LINE_NUM} ${VALID_NUM} ${SUCCESS_NUM} ${FAILD_NUM}
 }
 
+# make log path
+if [ ! -d ${USE_LOG_DIR} ]; then
+    mkdir -p ${USE_LOG_DIR}
+fi
+
 # check lock
 if [ -f ${LOCK_FILE} ]; then
     printf "\E[31m[Error]\E[0m The program is being used.\n"
@@ -150,9 +159,9 @@ fi
 
 touch ${LOCK_FILE}
 
-#
-if [ ! -f ${MS_FILE} ]; then
-    printf "\E[31m[Error]\E[0m MS file was not found.\n"
+# check base web nginx conf
+if [ ! -f ${BASE_NGINX_CONF_FILE} ]; then
+    printf "\E[31m[Error]\E[0m base nginx .conf file was not found.\n"
     quitRun
 fi
 
